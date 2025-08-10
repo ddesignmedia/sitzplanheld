@@ -171,7 +171,7 @@ body.dark-mode #darkModeToggleButton:hover {
 .tab-action-icon:hover { color: #374151; }
 
 body.dark-mode .tab {
-    color: var(--color-slate-200);
+    color: var(--color-slate-700);
 }
 
 body.dark-mode .tab-action-icon {
@@ -179,7 +179,7 @@ body.dark-mode .tab-action-icon {
 }
 
 body.dark-mode .tab-action-icon:hover {
-    color: var(--color-slate-100);
+    color: var(--color-gray-600);
 }
 
 /* --- Controls & Inputs --- */
