@@ -25,6 +25,32 @@
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
+body.dark-mode {
+    --color-gray-50: #111827; /* Dark BG */
+    --color-gray-200: #374151; /* Darker Tab */
+    --color-gray-300: #4B5563; /* Dark Border */
+    --color-gray-500: #9CA3AF; /* Lighter Text */
+    --color-gray-600: #D1D5DB; /* Even Lighter Text */
+    --color-gray-700: #F9FAFB; /* Lightest Text (e.g. labels) */
+    --color-slate-100: #1f2937; /* Button BG */
+    --color-slate-200: #374151; /* Button Hover / Other BG */
+    --color-slate-300: #4b5563; /* Button Hover */
+    --color-slate-400: #6b7280; /* Button Hover */
+    --color-slate-500: #9ca3af;
+    --color-slate-700: #e5e7eb; /* Button Text */
+    --color-blue-500: #60A5FA; /* Focus Ring */
+    --color-blue-600: #3B82F6;
+    --color-blue-800: #93C5FD;
+    --color-green-600: #10B981;
+    --color-green-700: #059669;
+    --color-red-500: #F87171;
+    --color-red-600: #EF4444;
+    --color-white: #1F2937; /* Main containers BG */
+    --shadow-sm: 0 1px 2px 0 rgb(255 255 255 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.05), 0 2px 4px -2px rgb(255 255 255 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.05), 0 4px 6px -4px rgb(255 255 255 / 0.05);
+}
+
 body {
     font-family: Arial, Helvetica, sans-serif;
     background-color: var(--color-gray-50);
@@ -64,6 +90,43 @@ body {
     max-height: 200px;
     object-fit: contain;
     border-radius: 0.75rem;
+}
+
+#darkModeToggleButton {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background-color: var(--color-slate-200);
+    border: 1px solid var(--color-slate-300);
+    color: var(--color-slate-700);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+#darkModeToggleButton:hover {
+    background-color: var(--color-slate-300);
+}
+
+body.dark-mode #darkModeToggleButton {
+    background-color: var(--color-slate-700);
+    border-color: var(--color-slate-500);
+    color: var(--color-slate-200);
+}
+
+body.dark-mode #darkModeToggleButton:hover {
+    background-color: var(--color-slate-500);
+}
+
+/* Anpassung für Banner Container */
+#bannerContainer {
+    position: relative;
 }
 
 /* --- Tabs --- */
@@ -286,6 +349,29 @@ body {
 .editor-cell span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7rem; color: #555; }
 .editor-cell.selected span { color: var(--color-white); }
 
+body.dark-mode #roomEditorGrid {
+    border-color: var(--color-gray-600);
+    background-color: var(--color-gray-700);
+}
+
+body.dark-mode .editor-cell {
+    background-color: var(--color-gray-500);
+    border-color: var(--color-gray-600);
+}
+
+body.dark-mode .editor-cell span {
+    color: var(--color-gray-200);
+}
+
+body.dark-mode .editor-cell.selected {
+    background-color: var(--color-blue-500);
+    border-color: var(--color-blue-600);
+}
+
+body.dark-mode .editor-cell.selected span {
+    color: var(--color-white);
+}
+
 /* --- Group Editor --- */
 #groupEditorColorSwatches { margin-bottom: 1rem; }
 .color-swatch-row { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 5px; }
@@ -387,6 +473,15 @@ body {
     display: flex; align-items: center; justify-content: center;
     border: 1px solid #94A3B8; font-size: 1.1rem;
     margin-top: 2rem;
+}
+
+body.dark-mode .seat.empty { background-color: #374151; }
+body.dark-mode .seat.occupied { background-color: #2563EB; }
+body.dark-mode .seat.occupied .seat-name { color: var(--color-white); }
+body.dark-mode #teacherDesk {
+    background-color: var(--color-slate-500);
+    color: var(--color-slate-100);
+    border-color: var(--color-slate-400);
 }
 
 /* Custom Layout Grid */

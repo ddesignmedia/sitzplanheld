@@ -1751,4 +1751,27 @@ window.addEventListener('DOMContentLoaded', () => {
     // Initialisierung beim Laden der Seite
     addTabButton.addEventListener('click', addTab);
     addTab();
+
+    // --- Dark Mode ---
+    const darkModeToggleButton = document.getElementById('darkModeToggleButton');
+    const currentTheme = localStorage.getItem('theme');
+
+    if (currentTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        darkModeToggleButton.textContent = '☀️';
+    } else {
+        darkModeToggleButton.textContent = '🌙';
+    }
+
+    darkModeToggleButton.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        let theme = 'light';
+        if (document.body.classList.contains('dark-mode')) {
+            theme = 'dark';
+            darkModeToggleButton.textContent = '☀️';
+        } else {
+            darkModeToggleButton.textContent = '🌙';
+        }
+        localStorage.setItem('theme', theme);
+    });
 });
