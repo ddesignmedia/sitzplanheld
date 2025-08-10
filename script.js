@@ -1,5 +1,30 @@
 window.addEventListener('DOMContentLoaded', () => {
 
+    // --- Dark Mode ---
+    const darkModeToggleButton = document.getElementById('darkModeToggleButton');
+    if (darkModeToggleButton) {
+        const currentTheme = localStorage.getItem('theme');
+
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            darkModeToggleButton.textContent = '☀️';
+        } else {
+            darkModeToggleButton.textContent = '🌙';
+        }
+
+        darkModeToggleButton.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            let theme = 'light';
+            if (document.body.classList.contains('dark-mode')) {
+                theme = 'dark';
+                darkModeToggleButton.textContent = '☀️';
+            } else {
+                darkModeToggleButton.textContent = '🌙';
+            }
+            localStorage.setItem('theme', theme);
+        });
+    }
+
     let jsPDF;
     if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         console.error("jsPDF library not found. PDF export will be disabled.");
@@ -1430,7 +1455,7 @@ window.addEventListener('DOMContentLoaded', () => {
         commentInput.value = "Testplan";
         updateActivePlanDataFromUI();
 
-        if (activePlan.NUM_SEATS_EFFECTIVE === 0 && !activePlan.isCustomLayoutActive) {
+        if (activePlan.NUM_SEATS_EFFECTIVE === 0 && !plan.isCustomLayoutActive) {
             activePlan.isCustomLayoutActive = true;
             activePlan.NUM_SEATS_EFFECTIVE = DEFAULT_NUM_SEATS;
             activePlan.customLayoutSeatDefinitions = [...PREDEFINED_DEFAULT_LAYOUT_SEAT_DEFINITIONS];
@@ -1751,27 +1776,4 @@ window.addEventListener('DOMContentLoaded', () => {
     // Initialisierung beim Laden der Seite
     addTabButton.addEventListener('click', addTab);
     addTab();
-
-    // --- Dark Mode ---
-    const darkModeToggleButton = document.getElementById('darkModeToggleButton');
-    const currentTheme = localStorage.getItem('theme');
-
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        darkModeToggleButton.textContent = '☀️';
-    } else {
-        darkModeToggleButton.textContent = '🌙';
-    }
-
-    darkModeToggleButton.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        let theme = 'light';
-        if (document.body.classList.contains('dark-mode')) {
-            theme = 'dark';
-            darkModeToggleButton.textContent = '☀️';
-        } else {
-            darkModeToggleButton.textContent = '🌙';
-        }
-        localStorage.setItem('theme', theme);
-    });
 });
