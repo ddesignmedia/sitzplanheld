@@ -1,27 +1,23 @@
 window.addEventListener('DOMContentLoaded', () => {
 
     // --- Dark Mode ---
-    const darkModeToggleButton = document.getElementById('darkModeToggleButton');
-    if (darkModeToggleButton) {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
         const currentTheme = localStorage.getItem('theme');
 
         if (currentTheme === 'dark') {
             document.body.classList.add('dark-mode');
-            darkModeToggleButton.textContent = '☀️';
-        } else {
-            darkModeToggleButton.textContent = '🌙';
+            darkModeToggle.checked = true;
         }
 
-        darkModeToggleButton.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            let theme = 'light';
-            if (document.body.classList.contains('dark-mode')) {
-                theme = 'dark';
-                darkModeToggleButton.textContent = '☀️';
+        darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
             } else {
-                darkModeToggleButton.textContent = '🌙';
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
             }
-            localStorage.setItem('theme', theme);
         });
     }
 

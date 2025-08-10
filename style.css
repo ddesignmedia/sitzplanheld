@@ -93,36 +93,46 @@ body {
     border-radius: 0.75rem;
 }
 
-#darkModeToggleButton {
-    position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
-    background-color: var(--color-slate-200);
-    border: 1px solid var(--color-slate-300);
-    color: var(--color-slate-700);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.5rem;
-    cursor: pointer;
+/* --- Dark Mode Toggle Switch --- */
+.dark-mode-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s, color 0.2s;
 }
 
-#darkModeToggleButton:hover {
-    background-color: var(--color-slate-300);
+.dark-mode-label {
+    position: relative;
+    width: 60px;
+    height: 34px;
+    background-color: var(--color-gray-300);
+    border-radius: 34px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-body.dark-mode #darkModeToggleButton {
-    background-color: var(--color-slate-700);
-    border-color: var(--color-slate-500);
-    color: var(--color-slate-200);
+body.dark-mode .dark-mode-label {
+    background-color: var(--color-gray-700);
 }
 
-body.dark-mode #darkModeToggleButton:hover {
-    background-color: var(--color-slate-500);
+.dark-mode-label::before {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    top: 4px;
+    left: 4px;
+    background-color: white;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#darkModeToggle:checked + .dark-mode-label {
+    background-color: var(--color-blue-600);
+}
+
+#darkModeToggle:checked + .dark-mode-label::before {
+    transform: translateX(26px);
 }
 
 /* Anpassung für Banner Container */
@@ -511,6 +521,17 @@ body.dark-mode #teacherDesk {
 
 /* --- Hilfsklassen --- */
 .hidden { display: none !important; }
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
 
 /* --- Media Queries für Responsivität --- */
 @media (max-width: 1400px) {
