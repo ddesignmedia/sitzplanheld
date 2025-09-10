@@ -21,8 +21,8 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // KORREKTUR: jsPDF-Prüfung vereinfacht und Instanziierung in den Event-Listener verschoben.
-    if (typeof window.jspdf === 'undefined') {
+    let jsPDF;
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         console.error("jsPDF library not found. PDF export will be disabled.");
         const downloadPdfButton = document.getElementById('downloadPdfButton');
         if(downloadPdfButton) {
@@ -31,6 +31,8 @@ window.addEventListener('DOMContentLoaded', () => {
             downloadPdfButton.style.opacity = "0.5";
             downloadPdfButton.style.cursor = "not-allowed";
         }
+    } else {
+        jsPDF = window.jspdf.jsPDF;
     }
 
     const DEFAULT_NUM_SEATS = 32;
@@ -1464,13 +1466,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- PDF Download Funktion ---
     downloadPdfButton.addEventListener('click', () => {
-        // KORREKTUR: Direkte Prüfung und Instanziierung von jsPDF, um Scope-Probleme zu vermeiden.
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            messageArea.textContent = "PDF-Funktion ist nicht verfügbar, bitte die Seite neu laden.";
+        if (!jsPDF) {
+            messageArea.textContent = "PDF-Funktion ist nicht verfügbar.";
             return;
         }
-        const { jsPDF } = window.jspdf;
-
         updateActivePlanDataFromUI();
 
         if (plans.length === 0 || plans.every(p => p.NUM_SEATS_EFFECTIVE === 0)) {
