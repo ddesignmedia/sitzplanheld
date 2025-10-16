@@ -42,6 +42,11 @@
                 <label for="studentNames" class="input-label">Schülernamen (mit Komma oder mit Umbruch getrennt, z.B. Max1, Erika1, Tom*, gleiche Zahlen sitzen nebeneinander, Namen mit * sitzen nicht nebeneinander!):</label>
                 <textarea id="studentNames" rows="3" class="textarea-field" placeholder="Max Mustermann1, Erika Mustermann1, Tom Tester*, ..."></textarea>
             </div>
+            <div class="add-student-container">
+                <input type="text" id="addStudentNameInput" class="input-field" placeholder="Einzelnen Schüler hinzufügen">
+                <button id="addStudentButton" class="control-button-small">Hinzufügen</button>
+            </div>
+            <div id="studentListContainer" class="student-list-container"></div>
             <div class="buttons-container">
                 <button id="toggleRoomEditorButton" class="control-button-large">
                     <span class="text" data-text-content>Raumeditor</span>
