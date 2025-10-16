@@ -562,3 +562,33 @@ body.dark-mode #teacherDesk {
     .custom-layout-active-grid .seat-name { font-size: 0.6rem; }
     .color-swatch { width: 35px; height: 35px; }
 }
+.student-list-container {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.student-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.student-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.remove-student-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    color: #ff0000;
+}

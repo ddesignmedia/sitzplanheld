@@ -76,6 +76,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const downloadPdfButton = document.getElementById('downloadPdfButton');
     const seatGridDiv = document.getElementById('seatGrid');
     const messageArea = document.getElementById('messageArea');
+    const addStudentNameInput = document.getElementById('addStudentNameInput');
+    const addStudentButton = document.getElementById('addStudentButton');
+    const studentListContainer = document.getElementById('studentListContainer');
 
     const PREDEFINED_DEFAULT_LAYOUT_SEAT_DEFINITIONS = [];
     for (let r = 0; r < 4; r++) { // 4 rows
@@ -140,7 +143,59 @@ window.addEventListener('DOMContentLoaded', () => {
             activePlan.comment = commentInput.value.trim();
             activePlan.groupSetting = groupEditorInput.value.trim();
             parseStudentNamesAndUpdateActivePlan();
+            renderStudentList();
         }
+    }
+
+    function renderStudentList() {
+        const activePlan = plans.find(p => p.planId === activePlanId);
+        if (!activePlan) return;
+
+        studentListContainer.innerHTML = '';
+        const ul = document.createElement('ul');
+        ul.className = 'student-list';
+
+        activePlan.allParsedStudentsList.forEach(student => {
+            const li = document.createElement('li');
+            li.className = 'student-list-item';
+
+            const studentNameSpan = document.createElement('span');
+            studentNameSpan.textContent = student.originalName;
+            li.appendChild(studentNameSpan);
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-student-button';
+            removeButton.textContent = '🗑️';
+            removeButton.onclick = () => removeStudent(student.originalName);
+            li.appendChild(removeButton);
+
+            ul.appendChild(li);
+        });
+
+        studentListContainer.appendChild(ul);
+    }
+
+    function removeStudent(studentName) {
+        const activePlan = plans.find(p => p.planId === activePlanId);
+        if (!activePlan) return;
+
+        const studentIndexInList = activePlan.allParsedStudentsList.findIndex(s => s.originalName === studentName);
+        if (studentIndexInList === -1) {
+            messageArea.textContent = `Schüler ${studentName} wurde nicht im Plan gefunden.`;
+            return;
+        }
+
+        activePlan.allParsedStudentsList.splice(studentIndexInList, 1);
+
+        const seatIndex = activePlan.seatData.findIndex(s => s.student === studentName);
+        if (seatIndex !== -1) {
+            activePlan.seatData[seatIndex].student = null;
+        }
+
+        studentNamesTextarea.value = activePlan.allParsedStudentsList.map(s => s.originalName).join(',\n');
+        messageArea.textContent = `Schüler ${studentName} wurde aus dem Plan entfernt.`;
+        renderGridForActivePlan();
+        renderStudentList();
     }
 
 
@@ -191,6 +246,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             renderTabs();
             renderGridForActivePlan();
+            renderStudentList();
         }
     }
 
@@ -718,6 +774,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 return { originalName, displayName, groupKey, isNoNeighbor };
             });
+        renderStudentList();
         return activePlan.allParsedStudentsList;
     }
 
@@ -1772,5 +1829,65 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Initialisierung beim Laden der Seite
     addTabButton.addEventListener('click', addTab);
+    addStudentButton.addEventListener('click', () => {
+        const activePlan = plans.find(p => p.planId === activePlanId);
+        if (!activePlan) return;
+
+        const studentName = addStudentNameInput.value.trim();
+        if (!studentName) {
+            messageArea.textContent = "Bitte geben Sie den Namen des Schülers ein, der hinzugefügt werden soll.";
+            return;
+        }
+
+        const emptySeats = activePlan.seatData
+            .map((seat, index) => (seat.student === null && !seat.isMarkedToKeepEmpty) ? index : -1)
+            .filter(index => index !== -1);
+
+        if (emptySeats.length === 0) {
+            messageArea.textContent = "Es sind keine freien Plätze verfügbar.";
+            return;
+        }
+
+        const tempTextarea = document.createElement('textarea');
+        tempTextarea.value = studentName;
+        const parsedStudent = tempTextarea.value.split(',')
+            .map(name => name.trim())
+            .filter(name => name.length > 0)
+            .map(originalName => {
+                let displayName = originalName;
+                let groupKey = null;
+                let isNoNeighbor = false;
+
+                if (displayName.endsWith('*')) {
+                    isNoNeighbor = true;
+                    displayName = displayName.slice(0, -1).trim();
+                }
+                const numberMatch = displayName.match(/^(.*?)(\d+)$/);
+                if (numberMatch) {
+                    displayName = numberMatch[1].trim();
+                    groupKey = numberMatch[2];
+                }
+                return { originalName, displayName, groupKey, isNoNeighbor };
+            })[0];
+
+        let placed = false;
+        for (const seatIndex of emptySeats) {
+            if (canPlaceStudent(parsedStudent, seatIndex, activePlan)) {
+                activePlan.allParsedStudentsList.push(parsedStudent);
+                activePlan.seatData[seatIndex].student = parsedStudent.originalName;
+                studentNamesTextarea.value = activePlan.allParsedStudentsList.map(s => s.originalName).join(',\n');
+                addStudentNameInput.value = '';
+                messageArea.textContent = `Schüler ${parsedStudent.originalName} wurde auf einen freien Platz gesetzt.`;
+                renderStudentList();
+                renderGridForActivePlan();
+                placed = true;
+                break;
+            }
+        }
+
+        if (!placed) {
+            messageArea.textContent = `Schüler ${parsedStudent.originalName} konnte aufgrund von Nachbarschaftsregeln nicht platziert werden.`;
+        }
+    });
     addTab();
 });
