@@ -592,3 +592,23 @@ body.dark-mode #teacherDesk {
     font-size: 1.2em;
     color: #ff0000;
 }
+
+#classManagementContainer {
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dark-mode #classManagementContainer {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+}
+
+.add-class-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
