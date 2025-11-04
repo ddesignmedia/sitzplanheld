@@ -42,34 +42,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const EDITOR_COLS = 9;
     const EDITOR_CELL_COUNT = EDITOR_ROWS * EDITOR_COLS;
 
-    // --- Globale Datenstruktur ---
-    let appData = {
-        classes: [],
-        activeClassId: null
-    };
-
-    // --- Hilfsfunktionen für den Datenzugriff ---
-    function getActiveClass() {
-        if (!appData.activeClassId) return null;
-        return appData.classes.find(c => c.id === appData.activeClassId);
-    }
-
-    function getActivePlan() {
-        const activeClass = getActiveClass();
-        if (!activeClass || !activeClass.activePlanId) return null;
-        return activeClass.plans.find(p => p.planId === activeClass.activePlanId);
-    }
+    let plans = [];
+    let activePlanId = null;
 
     let draggedSeatIndex = null;
     let draggedGroupInfo = null;
     let randomAnimationTimeoutId = null;
     let currentRandomHighlightIndex = -1;
 
-    const classManagementContainer = document.getElementById('classManagementContainer');
-    const classSelector = document.getElementById('classSelector');
-    const deleteClassButton = document.getElementById('deleteClassButton');
-    const newClassNameInput = document.getElementById('newClassName');
-    const addClassButton = document.getElementById('addClassButton');
     const tabBar = document.getElementById('tabBar');
     const addTabButton = document.getElementById('addTabButton');
     const classNameInput = document.getElementById('classNameInput');
@@ -112,14 +92,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Plan- und Tab-Management ---
-    function createNewPlan(name, copyFromPlan = null) {
-        const activeClass = getActiveClass();
-        if (!activeClass) return null;
-
-        const planId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+    function createNewPlan(name = `Plan ${plans.length + 1}`, copyFromPlan = null) {
+        const planId = Date.now().toString() + Math.random().toString(36).substring(2,7);
         const newPlan = {
             planId: planId,
-            planName: name || `Plan ${activeClass.plans.length + 1}`,
+            planName: name,
             seatData: [],
             allParsedStudentsList: copyFromPlan ? JSON.parse(JSON.stringify(copyFromPlan.allParsedStudentsList)) : [],
             className: copyFromPlan ? copyFromPlan.className : "",
@@ -159,7 +136,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateActivePlanDataFromUI() {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (activePlan) {
             activePlan.className = classNameInput.value.trim();
             activePlan.roomName = roomNameInput.value.trim();
@@ -171,11 +148,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderStudentList() {
-        const activePlan = getActivePlan();
-        if (!activePlan) {
-            studentListContainer.innerHTML = '';
-            return;
-        }
+        const activePlan = plans.find(p => p.planId === activePlanId);
+        if (!activePlan) return;
 
         studentListContainer.innerHTML = '';
         const ul = document.createElement('ul');
@@ -202,7 +176,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function removeStudent(studentName) {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         const studentIndexInList = activePlan.allParsedStudentsList.findIndex(s => s.originalName === studentName);
@@ -227,28 +201,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function addTab() {
         updateActivePlanDataFromUI();
-        const activeClass = getActiveClass();
-        if (!activeClass) return;
-
-        const activePlanForCopy = getActivePlan();
+        const activePlanForCopy = plans.find(p => p.planId === activePlanId);
         const newPlan = createNewPlan(undefined, activePlanForCopy);
-        if (newPlan) {
-            activeClass.plans.push(newPlan);
-            // Directly call setActivePlan which will handle the rest
-            setActivePlan(newPlan.planId);
-        }
+        plans.push(newPlan);
+        setActivePlan(newPlan.planId);
     }
 
     function setActivePlan(planId) {
-        const activeClass = getActiveClass();
-        if (!activeClass) return;
-
-        if (activeClass.activePlanId && activeClass.activePlanId !== planId) {
+        if (activePlanId && activePlanId !== planId) {
             updateActivePlanDataFromUI();
         }
 
-        activeClass.activePlanId = planId;
-        const activePlan = getActivePlan();
+        activePlanId = planId;
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (activePlan) {
             classNameInput.value = activePlan.className || "";
             roomNameInput.value = activePlan.roomName || "";
@@ -270,10 +235,10 @@ window.addEventListener('DOMContentLoaded', () => {
             roomEditorContainer.classList.add('hidden');
             groupEditorContainer.classList.add('hidden');
 
-            if (activeClass.plans.length > 1 && activeClass.plans[0].planId !== activeClass.activePlanId) {
+            if (plans.length > 1 && plans[0].planId !== activePlanId) {
                 copyPlanButton.classList.remove('hidden');
-                const sourcePlanName = activeClass.plans[0].planName || "Plan 1";
-                copyPlanButton.querySelector('span[data-text-content]').textContent = `Raumplan '${sourcePlanName.substring(0, 10)}...'`;
+                const sourcePlanName = plans[0].planName || "Plan 1";
+                copyPlanButton.querySelector('span[data-text-content]').textContent = `Raumplan '${sourcePlanName.substring(0,10)}...'`;
             } else {
                 copyPlanButton.classList.add('hidden');
             }
@@ -286,19 +251,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTabs() {
-        const activeClass = getActiveClass();
-
         // Clear all but the add button
         while (tabBar.firstChild && tabBar.firstChild.id !== 'addTabButton') {
             tabBar.removeChild(tabBar.firstChild);
         }
 
-        if (!activeClass) return;
-
-        activeClass.plans.forEach(plan => {
+        plans.forEach(plan => {
             const tabDiv = document.createElement('div');
             tabDiv.classList.add('tab');
-            if (plan.planId === activeClass.activePlanId) {
+            if (plan.planId === activePlanId) {
                 tabDiv.classList.add('active');
             }
             tabDiv.dataset.planId = plan.planId;
@@ -353,15 +314,12 @@ window.addEventListener('DOMContentLoaded', () => {
             if (finishedEditing) return;
             finishedEditing = true;
 
-            const activeClass = getActiveClass();
-            if (!activeClass) return;
-
             let newName = originalName;
             if (saveChanges) {
-                newName = input.value.trim() || `Plan ${activeClass.plans.findIndex(p => p.planId === planId) + 1}`;
+                newName = input.value.trim() || `Plan ${plans.findIndex(p => p.planId === planId) + 1}`;
             }
 
-            const plan = activeClass.plans.find(p => p.planId === planId);
+            const plan = plans.find(p => p.planId === planId);
             if (plan) {
                 plan.planName = newName;
             }
@@ -398,17 +356,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     function closeTab(planIdToClose) {
-        const activeClass = getActiveClass();
-        if (!activeClass || activeClass.plans.length <= 1) {
+        if (plans.length <= 1) {
             messageArea.textContent = "Der letzte Tab kann nicht geschlossen werden.";
             return;
         }
-
-        const planIndex = activeClass.plans.findIndex(p => p.planId === planIdToClose);
+        const planIndex = plans.findIndex(p => p.planId === planIdToClose);
         if (planIndex > -1) {
-            activeClass.plans.splice(planIndex, 1);
-            if (activeClass.activePlanId === planIdToClose) {
-                setActivePlan(activeClass.plans[0].planId);
+            plans.splice(planIndex, 1);
+            if (activePlanId === planIdToClose) {
+                setActivePlan(plans[0].planId);
             } else {
                 renderTabs();
             }
@@ -418,7 +374,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Raumeditor Logik ---
     function createRoomEditorGrid() {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         roomEditorGridDiv.innerHTML = '';
@@ -436,7 +392,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleEditorCellClick(event) {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         const gridIndex = parseInt(event.currentTarget.dataset.gridIndex);
@@ -457,7 +413,7 @@ window.addEventListener('DOMContentLoaded', () => {
         groupEditorContainer.classList.add('hidden');
 
         // Den Text des anderen Buttons zurücksetzen
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (activePlan) {
             generateGroupsButton.querySelector('span[data-text-content]').textContent = activePlan.areGroupsActive ? "Gr. löschen" : "Gruppen";
         }
@@ -498,7 +454,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     applyLayoutButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         if (activePlan.customLayoutSeatDefinitions.length === 0) {
@@ -519,16 +475,12 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     function renderGridForActivePlan() {
-        const activePlan = getActivePlan();
-        const activeClass = getActiveClass();
-
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (activePlan) {
             renderGrid(activePlan);
-        } else if (activeClass && activeClass.plans.length > 0) {
-            // This case should ideally not be hit if logic is correct, but as a fallback:
-            setActivePlan(activeClass.plans[0].planId);
+        } else if (plans.length > 0) {
+            setActivePlan(plans[0].planId);
         } else {
-            // This is the state when there are no classes or the active class has no plans.
             seatGridDiv.innerHTML = '<p style="text-align: center; color: #6B7280; grid-column: 1 / -1; padding: 2.5rem 0;">Erstelle zuerst einen Raumplan mit dem Raumeditor oder lade einen bestehenden Plan!</p>';
             seatGridDiv.className = 'custom-layout-active-grid';
             seatGridDiv.style.gridTemplateColumns = '1fr';
@@ -679,7 +631,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleSeatClick(event) {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         const seatIndex = parseInt(event.currentTarget.dataset.index);
         activePlan.seatData[seatIndex].isMarkedToKeepEmpty = !activePlan.seatData[seatIndex].isMarkedToKeepEmpty;
@@ -688,7 +640,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function handleSeatRightClick(event) {
         event.preventDefault();
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         const seatIndex = parseInt(event.currentTarget.dataset.index);
         activePlan.seatData[seatIndex].colorState = (activePlan.seatData[seatIndex].colorState + 1) % 4;
@@ -699,7 +651,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     function handleDragStart(event) {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         if (event.currentTarget.classList.contains('color-swatch')) {
@@ -750,7 +702,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function handleGroupDrop(event) {
         event.preventDefault();
         event.currentTarget.classList.remove('drag-over-target');
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         const targetSeatIndex = parseInt(event.currentTarget.dataset.index);
 
@@ -792,7 +744,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseStudentNamesAndUpdateActivePlan() {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return [];
 
         const namesStringWithMixedDelimiters = studentNamesTextarea.value.trim();
@@ -1095,17 +1047,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     assignAllButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         parseStudentNamesAndUpdateActivePlan();
         performFullSeatAssignment(activePlan);
     });
 
     copyPlanButton.addEventListener('click', () => {
-        const activeClass = getActiveClass();
-        if (!activeClass) return;
-        const activePlan = getActivePlan();
-        const sourcePlan = activeClass.plans[0];
+        const activePlan = plans.find(p => p.planId === activePlanId);
+        const sourcePlan = plans[0];
         if (!activePlan || !sourcePlan || activePlan.planId === sourcePlan.planId) return;
 
         activePlan.className = sourcePlan.className;
@@ -1181,7 +1131,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Zufallsauswahl ---
     randomSelectButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         if (randomAnimationTimeoutId) {
@@ -1269,20 +1219,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Speicher- und Ladefunktionen ---
     savePlanButton.addEventListener('click', () => {
-        updateActivePlanDataFromUI(); // Make sure the latest UI changes are in the data model
+        updateActivePlanDataFromUI();
 
-        const dataStr = JSON.stringify(appData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const dataToSave = {
+            plans: plans,
+            activePlanId: activePlanId
+        };
+        const dataStr = JSON.stringify(dataToSave, null, 2);
+        const dataBlob = new Blob([dataStr], {type: "application/json"});
         const url = URL.createObjectURL(dataBlob);
 
         const downloadLink = document.createElement('a');
         downloadLink.href = url;
-        downloadLink.download = 'sitzplanheld_daten.json'; // New filename
+        downloadLink.download = 'sitzplan_daten_alle_plaene.json';
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(url);
-        messageArea.textContent = "Alle Klassen und Pläne gespeichert.";
+        messageArea.textContent = "Alle Pläne gespeichert.";
     });
 
     loadPlanButton.addEventListener('click', () => {
@@ -1290,7 +1244,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     loadFileInput.addEventListener('change', (event) => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (activePlan && activePlan.finalRandomSeatIndex !== -1) {
             const prevFinalSeatDiv = document.getElementById(`seat-${activePlan.finalRandomSeatIndex}`);
             if (prevFinalSeatDiv) prevFinalSeatDiv.classList.remove('random-selected-final');
@@ -1308,37 +1262,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const loadedData = JSON.parse(e.target.result);
-
-                // Check for new format (with classes)
-                if (loadedData && Array.isArray(loadedData.classes)) {
-                    appData = loadedData;
-                    // Basic validation and default-setting for loaded data
-                    appData.classes.forEach(cls => {
-                        cls.plans.forEach(plan => {
-                            plan.comment = plan.comment || "";
-                            plan.groupSetting = plan.groupSetting || "";
-                            plan.isCustomLayoutActive = plan.isCustomLayoutActive || false;
-                            plan.customLayoutSeatDefinitions = plan.customLayoutSeatDefinitions || [];
-                            plan.NUM_SEATS_EFFECTIVE = plan.NUM_SEATS_EFFECTIVE || (plan.isCustomLayoutActive ? plan.customLayoutSeatDefinitions.length : DEFAULT_NUM_SEATS);
-                            if (plan.isCustomLayoutActive) {
-                                calculateUsedBoundsForPlan(plan);
-                            } else {
-                                plan.minUsedRow = 0; plan.maxUsedRow = EDITOR_ROWS - 1;
-                                plan.minUsedCol = 0; plan.maxUsedCol = EDITOR_COLS - 1;
-                            }
-                            plan.areGroupsActive = plan.seatData.some(seat => seat.groupId !== null);
-                            plan.finalRandomSeatIndex = plan.finalRandomSeatIndex || -1;
-                        });
-                    });
-                    messageArea.textContent = "Alle Klassen und Pläne erfolgreich geladen.";
-                }
-                // Check for old format (just plans) and convert it
-                else if (loadedData && Array.isArray(loadedData.plans)) {
-                    const defaultClassName = "Importierte Klasse";
-
-                    // Normalize plans from the old format
-                    loadedData.plans.forEach(plan => {
+                const loadedFileData = JSON.parse(e.target.result);
+                if (loadedFileData && Array.isArray(loadedFileData.plans) && loadedFileData.activePlanId) {
+                    plans = loadedFileData.plans;
+                    plans.forEach(plan => {
                         plan.comment = plan.comment || "";
                         plan.groupSetting = plan.groupSetting || "";
                         plan.isCustomLayoutActive = plan.isCustomLayoutActive || false;
@@ -1353,24 +1280,11 @@ window.addEventListener('DOMContentLoaded', () => {
                         plan.areGroupsActive = plan.seatData.some(seat => seat.groupId !== null);
                         plan.finalRandomSeatIndex = plan.finalRandomSeatIndex || -1;
                     });
-
-                    const newClass = {
-                        id: Date.now().toString(),
-                        name: defaultClassName,
-                        plans: loadedData.plans,
-                        activePlanId: loadedData.activePlanId
-                    };
-
-                    // Replace current data with the imported class
-                    appData.classes = [newClass];
-                    appData.activeClassId = newClass.id;
-                    messageArea.textContent = "Alter Plan wurde erfolgreich in eine neue Klasse importiert.";
+                    setActivePlan(loadedFileData.activePlanId);
+                    messageArea.textContent = "Pläne erfolgreich geladen.";
                 } else {
                     throw new Error("Ungültiges Dateiformat oder fehlende Daten.");
                 }
-
-                initApp();
-
             } catch (error) {
                 console.error("Fehler beim Laden der Datei:", error);
                 messageArea.textContent = `Fehler beim Laden: ${error.message}`;
@@ -1439,7 +1353,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // KORREKTUR: Vereinfachte Logik zum Umschalten der Sichtbarkeit
     generateGroupsButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         const groupsButtonTextSpan = generateGroupsButton.querySelector('span[data-text-content]');
 
@@ -1468,7 +1382,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     closeGroupEditorButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
         const groupsButtonTextSpan = generateGroupsButton.querySelector('span[data-text-content]');
         if (groupsButtonTextSpan) {
@@ -1478,7 +1392,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     generateRandomGroupsButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         const groupParams = parseGroupInputFromEditor();
@@ -1577,7 +1491,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     insertTestClassButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         const maleNames = ["Max Mustermann", "Tom Mustermann", "Paul Mustermann", "Leon Mustermann", "Finn Mustermann", "Noah Mustermann", "Elias Mustermann", "Ben Mustermann", "Luca Mustermann", "Felix Mustermann", "Jonas Mustermann", "Louis Mustermann", "Anton Mustermann", "Emil Mustermann", "Oskar Mustermann"];
@@ -1615,8 +1529,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
 
         updateActivePlanDataFromUI();
-        const activeClass = getActiveClass();
-        if (!activeClass || activeClass.plans.length === 0 || activeClass.plans.every(p => p.NUM_SEATS_EFFECTIVE === 0)) {
+
+        if (plans.length === 0 || plans.every(p => p.NUM_SEATS_EFFECTIVE === 0)) {
             messageArea.textContent = "Bitte erstelle oder lade mindestens einen Plan mit Sitzen, um ein PDF zu generieren.";
             return;
         }
@@ -1637,7 +1551,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const planNameFontSize = 14;
 
 
-        activeClass.plans.forEach((currentPlan, planIndex) => {
+        plans.forEach((currentPlan, planIndex) => {
             if (planIndex > 0) {
                 doc.addPage();
             }
@@ -1916,7 +1830,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Initialisierung beim Laden der Seite
     addTabButton.addEventListener('click', addTab);
     addStudentButton.addEventListener('click', () => {
-        const activePlan = getActivePlan();
+        const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
 
         const studentName = addStudentNameInput.value.trim();
@@ -1975,132 +1889,5 @@ window.addEventListener('DOMContentLoaded', () => {
             messageArea.textContent = `Schüler ${parsedStudent.originalName} konnte aufgrund von Nachbarschaftsregeln nicht platziert werden.`;
         }
     });
-
-    // --- Klassen-Management ---
-    function renderClasses() {
-        classSelector.innerHTML = '';
-        // Make sure the container is always visible
-        classManagementContainer.style.display = 'block';
-
-        if (appData.classes.length === 0) {
-            classSelector.style.display = 'none';
-            deleteClassButton.style.display = 'none';
-            tabBar.style.display = 'none';
-            document.querySelector('.controls').style.display = 'none';
-        } else {
-            classSelector.style.display = 'inline-block';
-            deleteClassButton.style.display = 'inline-block';
-            tabBar.style.display = 'flex';
-            document.querySelector('.controls').style.display = 'block';
-
-            appData.classes.forEach(cls => {
-                const option = document.createElement('option');
-                option.value = cls.id;
-                option.textContent = cls.name;
-                if (cls.id === appData.activeClassId) {
-                    option.selected = true;
-                }
-                classSelector.appendChild(option);
-            });
-        }
-    }
-
-    function switchClass(classId) {
-        appData.activeClassId = classId;
-        const activeClass = getActiveClass();
-        if (activeClass && activeClass.plans.length > 0 && !activeClass.activePlanId) {
-            activeClass.activePlanId = activeClass.plans[0].planId;
-        }
-        initApp();
-    }
-
-    function addClass() {
-        const newName = newClassNameInput.value.trim();
-        if (newName && !appData.classes.some(c => c.name === newName)) {
-            const newClass = {
-                id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
-                name: newName,
-                plans: [],
-                activePlanId: null
-            };
-            appData.classes.push(newClass);
-            appData.activeClassId = newClass.id;
-
-            const firstPlan = createNewPlan('Plan 1');
-            newClass.plans.push(firstPlan);
-            newClass.activePlanId = firstPlan.planId;
-
-            newClassNameInput.value = '';
-            initApp();
-        } else if (appData.classes.some(c => c.name === newName)) {
-            messageArea.textContent = `Eine Klasse mit dem Namen "${newName}" existiert bereits.`;
-        } else {
-            messageArea.textContent = "Bitte geben Sie einen Namen für die neue Klasse ein.";
-        }
-    }
-
-    function deleteClass() {
-        const activeClass = getActiveClass();
-        if (activeClass) {
-            if (confirm(`Sind Sie sicher, dass Sie die Klasse "${activeClass.name}" und alle zugehörigen Pläne löschen möchten?`)) {
-                appData.classes = appData.classes.filter(c => c.id !== appData.activeClassId);
-                if (appData.classes.length > 0) {
-                    appData.activeClassId = appData.classes[0].id;
-                } else {
-                    appData.activeClassId = null;
-                }
-                initApp();
-            }
-        }
-    }
-
-
-    function initApp() {
-        // If there are no classes, create a default one to start with.
-        if (appData.classes.length === 0) {
-            const defaultClass = {
-                id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
-                name: "Meine erste Klasse",
-                plans: [],
-                activePlanId: null
-            };
-            appData.classes.push(defaultClass);
-            appData.activeClassId = defaultClass.id;
-
-            const firstPlan = createNewPlan('Plan 1');
-            defaultClass.plans.push(firstPlan);
-            defaultClass.activePlanId = firstPlan.planId;
-        }
-
-        renderClasses();
-        const activeClass = getActiveClass();
-        if (activeClass) {
-            // Ensure there's at least one plan in the active class
-            if (activeClass.plans.length === 0) {
-                const firstPlan = createNewPlan('Plan 1');
-                activeClass.plans.push(firstPlan);
-                activeClass.activePlanId = firstPlan.planId;
-            } else if (!activeClass.activePlanId || !activeClass.plans.some(p => p.planId === activeClass.activePlanId)) {
-                // Ensure the activePlanId is valid
-                activeClass.activePlanId = activeClass.plans[0].planId;
-            }
-            renderTabs();
-            renderGridForActivePlan();
-            renderStudentList();
-        } else {
-            // This case should no longer be reached, but kept as a fallback.
-            classManagementContainer.style.display = 'block';
-            tabBar.style.display = 'none';
-            document.querySelector('.controls').style.display = 'none';
-            seatGridDiv.innerHTML = '<p style="text-align: center; color: #6B7280; grid-column: 1 / -1; padding: 2.5rem 0;">Bitte fügen Sie eine Klasse hinzu, um zu beginnen.</p>';
-            studentListContainer.innerHTML = '';
-        }
-    }
-
-    // Event Listeners for Class Management
-    addClassButton.addEventListener('click', addClass);
-    deleteClassButton.addEventListener('click', deleteClass);
-    classSelector.addEventListener('change', (e) => switchClass(e.target.value));
-
-    initApp();
+    addTab();
 });
