@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sitzplanheld</title>
+    <!-- Lokale Skripte für PDF-Export. Stellen Sie sicher, dass diese Dateien im selben Ordner liegen. -->
+    <script src="html2canvas.min.js"></script>
+    <script src="jspdf.umd.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="bannerOuterContainer">
+        <div id="bannerContainer">
+            <img id="bannerImage" src="banner_sitzplan.jpg" alt="Sitzplanheld Banner">
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="tabBar">
+            <!-- Tabs werden hier dynamisch von JS eingefügt -->
+            <button id="addTabButton" title="Neuen Plan hinzufügen">+</button>
+        </div>
+
+        <div class="controls">
+            <div class="controls-grid">
+                <div>
+                    <label for="classNameInput" class="input-label">Klasse:</label>
+                    <input type="text" id="classNameInput" class="input-field" placeholder="z.B. 6a">
+                </div>
+                <div>
+                    <label for="roomNameInput" class="input-label">Raum:</label>
+                    <input type="text" id="roomNameInput" class="input-field" placeholder="z.B. Raum 101">
+                </div>
+                <div>
+                    <label for="commentInput" class="input-label">Kommentar:</label>
+                    <input type="text" id="commentInput" class="input-field" placeholder="z.B. Sitzordnung für Test">
+                </div>
+            </div>
+            <div>
+                <label for="studentNames" class="input-label">Schülernamen (mit Komma oder mit Umbruch getrennt, z.B. Max1, Erika1, Tom*, gleiche Zahlen sitzen nebeneinander, Namen mit * sitzen nicht nebeneinander!):</label>
+                <textarea id="studentNames" rows="3" class="textarea-field" placeholder="Max Mustermann1, Erika Mustermann1, Tom Tester*, ..."></textarea>
+            </div>
+            <div class="add-student-container">
+                <input type="text" id="addStudentNameInput" class="input-field" placeholder="Einzelnen Schüler hinzufügen">
+                <button id="addStudentButton" class="control-button-small">Hinzufügen</button>
+            </div>
+            <div id="studentListContainer" class="student-list-container"></div>
+            <div class="buttons-container">
+                <button id="toggleRoomEditorButton" class="control-button-large">
+                    <span class="text" data-text-content>Raumeditor</span>
+                </button>
+                <button id="assignAllButton" class="control-button-large">
+                    <span class="text" data-text-content>Zuweisen</span>
+                </button>
+                <button id="generateGroupsButton" class="control-button-large">
+                    <span class="text" data-text-content>Gruppen</span>
+                </button>
+                <button id="randomSelectButton" class="control-button-large">
+                    <span class="text" data-text-content>Zufall</span>
+                </button>
+                <button id="copyPlanButton" class="control-button-large hidden">
+                    <span class="text" data-text-content>Plan kopieren</span>
+                </button>
+            </div>
+            <div class="buttons-container small-margin">
+                <button id="insertTestClassButton" class="control-button-small">
+                    <span class="text">Testklasse</span>
+                </button>
+                <button id="savePlanButton" class="control-button-small">
+                    <span class="text" data-text-content>Speichern</span>
+                </button>
+                <button id="loadPlanButton" class="control-button-small">
+                    <span class="text" data-text-content>Laden</span>
+                </button>
+                <input type="file" id="loadFileInput" accept=".json" class="hidden">
+                <button id="downloadPdfButton" class="control-button-small">
+                    <span class="text" data-text-content>PDF</span>
+                </button>
+                <div class="dark-mode-toggle">
+                    <input type="checkbox" id="darkModeToggle" class="hidden">
+                    <label for="darkModeToggle" class="dark-mode-label">
+                        <span class="sr-only">Toggle Dark Mode</span>
+                    </label>
+                </div>
+            </div>
+            <div id="messageArea"></div>
+        </div>
+
+        <!-- KORREKTUR: Die 'hidden' Klasse wird standardmäßig hinzugefügt, um den Zustand klar zu definieren -->
+        <div id="roomEditorContainer" class="editor-panel hidden">
+            <h3 class="editor-title">Raumeditor</h3>
+            <p class="editor-description">Klicke auf die Kästchen, um Sitzplätze für den Plan auszuwählen (6 Reihen, 9 Spalten).</p>
+            <div id="roomEditorGrid"></div>
+            <div class="editor-button-container">
+                <button id="applyLayoutButton" class="editor-button">Layout anwenden</button>
+            </div>
+        </div>
+
+        <div id="groupEditorContainer" class="editor-panel hidden">
+            <h3 class="editor-title">Gruppen-Editor</h3>
+            <div class="mb-4">
+                <label for="groupEditorInput" class="input-label">Zufällige Gruppeneinteilung:</label>
+                <input type="text" id="groupEditorInput" class="input-field" placeholder="Anzahl (z.B. 4) oder Größe (z.B. G3)">
+                <button id="generateRandomGroupsButton" class="editor-button">Zufällige Gruppen bilden</button>
+            </div>
+            <p class="editor-description">Oder ziehe eine Gruppenfarbe auf einen Sitzplatz:</p>
+            <div id="groupEditorColorSwatches"></div>
+            <div class="editor-button-container">
+                <button id="closeGroupEditorButton" class="editor-button">Editor schließen</button>
+            </div>
+        </div>
+
+        <div id="seatGridContainer">
+            <div id="seatGrid"></div>
+            <div id="teacherDeskContainer">
+                <div id="teacherDesk">Pult</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
