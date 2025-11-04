@@ -598,13 +598,31 @@ body.dark-mode #teacherDesk {
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 1rem;
 }
 
 .dark-mode #classManagementContainer {
     background-color: #1f2937;
     border-bottom-color: #374151;
+}
+
+.class-selector-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.class-selector-container .input-label {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.class-selector-container .input-field {
+    width: auto;
+    flex-grow: 1;
 }
 
 .add-class-container {
