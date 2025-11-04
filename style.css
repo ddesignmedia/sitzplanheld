@@ -143,6 +143,7 @@ body.dark-mode .dark-mode-label {
 /* --- Tabs --- */
 #tabBar {
     display: flex;
+    flex-wrap: wrap;
     border-bottom: 1px solid var(--color-gray-300);
     margin-bottom: 0.25rem;
 }
