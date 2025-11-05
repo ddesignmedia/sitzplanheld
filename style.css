@@ -181,6 +181,7 @@ body.dark-mode .dark-mode-label {
 .tab-input { border: 1px solid var(--color-blue-500); background-color: var(--color-white); outline: none; width: 100px; padding: 1px 3px; font-size: inherit; font-family: inherit; }
 .tab-action-icon { margin-left: 8px; font-size: 0.9rem; color: #9ca3af; cursor: pointer; padding: 0 4px; }
 .tab-action-icon:hover { color: #374151; }
+.tab-color-input { display: none; }
 
 body.dark-mode .tab {
     color: var(--color-pure-white);
@@ -193,6 +194,18 @@ body.dark-mode .tab-action-icon {
 body.dark-mode .tab-action-icon:hover {
     color: var(--color-gray-600);
 }
+
+.tab.dragging-tab {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+.tab.drag-over-before {
+    border-left: 2px solid var(--color-blue-500);
+}
+.tab.drag-over-after {
+    border-right: 2px solid var(--color-blue-500);
+}
+
 
 /* --- Controls & Inputs --- */
 .controls {
