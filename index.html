@@ -60,9 +60,10 @@
                 <button id="randomSelectButton" class="control-button-large">
                     <span class="text" data-text-content>Zufall</span>
                 </button>
-                <button id="copyPlanButton" class="control-button-large hidden">
-                    <span class="text" data-text-content>Plan kopieren</span>
-                </button>
+                <div id="copyPlanContainer" class="hidden">
+                    <select id="copyPlanSelect" class="input-field"></select>
+                    <button id="copyPlanConfirmButton" class="control-button-small">Übernehmen</button>
+                </div>
             </div>
             <div class="buttons-container small-margin">
                 <button id="insertTestClassButton" class="control-button-small">
@@ -116,6 +117,27 @@
             <div id="seatGrid"></div>
             <div id="teacherDeskContainer">
                 <div id="teacherDesk">Pult</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="colorModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">Farbe auswählen</h3>
+            <div id="colorGrid" class="color-grid"></div>
+            <div class="custom-color-container">
+                <div class="custom-color-input-wrapper">
+                    <label for="customColorInput" class="input-label">Benutzerdefiniert:</label>
+                    <input type="color" id="customColorInput" class="custom-color-input">
+                </div>
+                <div class="selected-color-preview-wrapper">
+                    <span class="input-label">Ausgewählte Farbe:</span>
+                    <div id="selectedColorPreview" class="selected-color-preview"></div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelColor" class="modal-button">Abbrechen</button>
+                <button id="confirmColor" class="modal-button primary">Festlegen</button>
             </div>
         </div>
     </div>

@@ -66,7 +66,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const roomEditorContainer = document.getElementById('roomEditorContainer');
     const roomEditorGridDiv = document.getElementById('roomEditorGrid');
     const applyLayoutButton = document.getElementById('applyLayoutButton');
-    const copyPlanButton = document.getElementById('copyPlanButton');
+    const copyPlanContainer = document.getElementById('copyPlanContainer');
+    const copyPlanSelect = document.getElementById('copyPlanSelect');
+    const copyPlanConfirmButton = document.getElementById('copyPlanConfirmButton');
     const groupEditorContainer = document.getElementById('groupEditorContainer');
     const groupEditorColorSwatchesDiv = document.getElementById('groupEditorColorSwatches');
     const closeGroupEditorButton = document.getElementById('closeGroupEditorButton');
@@ -79,6 +81,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const addStudentNameInput = document.getElementById('addStudentNameInput');
     const addStudentButton = document.getElementById('addStudentButton');
     const studentListContainer = document.getElementById('studentListContainer');
+    const colorModal = document.getElementById('colorModal');
+    const colorGrid = document.getElementById('colorGrid');
+    const customColorInput = document.getElementById('customColorInput');
+    const selectedColorPreview = document.getElementById('selectedColorPreview');
+    const cancelColorButton = document.getElementById('cancelColor');
+    const confirmColorButton = document.getElementById('confirmColor');
+
+    let activePlanIdForColorChange = null;
+    let currentlySelectedColor = null;
+
+    const PREDEFINED_COLORS = ['#ff0000', '#2a1aff', '#faff00', '#00ff0a', '#ff0099', '#8d1aff', '#00ffe0', '#c97700', '#006d17', '#8d8d8d', '#000000', '#ffffff'];
 
     const PREDEFINED_DEFAULT_LAYOUT_SEAT_DEFINITIONS = [];
     for (let r = 0; r < 4; r++) { // 4 rows
@@ -236,12 +249,19 @@ window.addEventListener('DOMContentLoaded', () => {
             roomEditorContainer.classList.add('hidden');
             groupEditorContainer.classList.add('hidden');
 
-            if (plans.length > 1 && plans[0].planId !== activePlanId) {
-                copyPlanButton.classList.remove('hidden');
-                const sourcePlanName = plans[0].planName || "Plan 1";
-                copyPlanButton.querySelector('span[data-text-content]').textContent = `Raumplan '${sourcePlanName.substring(0,10)}...'`;
+            if (plans.length > 1) {
+                copyPlanContainer.classList.remove('hidden');
+                copyPlanSelect.innerHTML = '';
+                plans.forEach(plan => {
+                    if (plan.planId !== activePlanId) {
+                        const option = document.createElement('option');
+                        option.value = plan.planId;
+                        option.textContent = plan.planName;
+                        copyPlanSelect.appendChild(option);
+                    }
+                });
             } else {
-                copyPlanButton.classList.add('hidden');
+                copyPlanContainer.classList.add('hidden');
             }
 
 
@@ -249,6 +269,17 @@ window.addEventListener('DOMContentLoaded', () => {
             renderGridForActivePlan();
             renderStudentList();
         }
+    }
+
+    function isColorDark(hexColor) {
+        if (!hexColor) return false;
+        const color = hexColor.substring(1); // strip #
+        const rgb = parseInt(color, 16);
+        const r = (rgb >> 16) & 0xff;
+        const g = (rgb >> 8) & 0xff;
+        const b = (rgb >> 0) & 0xff;
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        return luma < 128;
     }
 
     function renderTabs() {
@@ -265,6 +296,9 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             if (plan.color) {
                 tabDiv.style.backgroundColor = plan.color;
+                if (isColorDark(plan.color)) {
+                    tabDiv.classList.add('dark-background');
+                }
             }
             tabDiv.dataset.planId = plan.planId;
 
@@ -300,7 +334,7 @@ window.addEventListener('DOMContentLoaded', () => {
             colorIcon.title = "Farbe ändern";
             colorIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                colorInput.click();
+                openColorModal(plan.planId);
             });
             tabDiv.appendChild(colorIcon);
 
@@ -1151,10 +1185,11 @@ window.addEventListener('DOMContentLoaded', () => {
         performFullSeatAssignment(activePlan);
     });
 
-    copyPlanButton.addEventListener('click', () => {
+    copyPlanConfirmButton.addEventListener('click', () => {
         const activePlan = plans.find(p => p.planId === activePlanId);
-        const sourcePlan = plans[0];
-        if (!activePlan || !sourcePlan || activePlan.planId === sourcePlan.planId) return;
+        const sourcePlanId = copyPlanSelect.value;
+        const sourcePlan = plans.find(p => p.planId === sourcePlanId);
+        if (!activePlan || !sourcePlan) return;
 
         activePlan.className = sourcePlan.className;
         activePlan.roomName = sourcePlan.roomName;
@@ -1163,6 +1198,7 @@ window.addEventListener('DOMContentLoaded', () => {
         activePlan.isCustomLayoutActive = sourcePlan.isCustomLayoutActive;
         activePlan.customLayoutSeatDefinitions = JSON.parse(JSON.stringify(sourcePlan.customLayoutSeatDefinitions));
         activePlan.NUM_SEATS_EFFECTIVE = sourcePlan.NUM_SEATS_EFFECTIVE;
+        activePlan.allParsedStudentsList = JSON.parse(JSON.stringify(sourcePlan.allParsedStudentsList));
 
         if (activePlan.isCustomLayoutActive) {
             calculateUsedBoundsForPlan(activePlan);
@@ -1174,41 +1210,21 @@ window.addEventListener('DOMContentLoaded', () => {
         initializeSeatDataForPlan(activePlan);
 
         sourcePlan.seatData.forEach((sourceSeat, sourceSeatIndex) => {
-            if (sourceSeat.student) {
-                const studentExistsInActivePlan = activePlan.allParsedStudentsList.find(s => s.originalName === sourceSeat.student);
-                if (studentExistsInActivePlan) {
-                    let targetSeatInActivePlan = null;
-                    if (activePlan.isCustomLayoutActive) {
-                        targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
-                    } else {
-                        if (sourceSeatIndex < activePlan.seatData.length) {
-                            targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
-                        }
-                    }
-
-                    if (targetSeatInActivePlan) {
-                        targetSeatInActivePlan.student = sourceSeat.student;
-                        targetSeatInActivePlan.colorState = sourceSeat.colorState;
-                        targetSeatInActivePlan.groupId = sourceSeat.groupId;
-                        targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
-                        targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
-                    }
-                }
+            let targetSeatInActivePlan = null;
+            if (activePlan.isCustomLayoutActive) {
+                targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
             } else {
-                let targetSeatInActivePlan = null;
-                if (activePlan.isCustomLayoutActive) {
-                    targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
-                } else {
-                    if (sourceSeatIndex < activePlan.seatData.length) {
-                        targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
-                    }
+                if (sourceSeatIndex < activePlan.seatData.length) {
+                    targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
                 }
-                if (targetSeatInActivePlan) {
-                    targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
-                    targetSeatInActivePlan.colorState = sourceSeat.colorState;
-                    targetSeatInActivePlan.groupId = sourceSeat.groupId;
-                    targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
-                }
+            }
+
+            if (targetSeatInActivePlan) {
+                targetSeatInActivePlan.student = sourceSeat.student;
+                targetSeatInActivePlan.colorState = sourceSeat.colorState;
+                targetSeatInActivePlan.groupId = sourceSeat.groupId;
+                targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
+                targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
             }
         });
 
@@ -1216,6 +1232,7 @@ window.addEventListener('DOMContentLoaded', () => {
         roomNameInput.value = activePlan.roomName;
         commentInput.value = activePlan.comment;
         groupEditorInput.value = activePlan.groupSetting;
+        studentNamesTextarea.value = activePlan.allParsedStudentsList.map(s => s.originalName).join(',\n');
         activePlan.areGroupsActive = activePlan.seatData.some(s => s.groupId !== null);
         const groupsButtonTextSpan = generateGroupsButton.querySelector('span[data-text-content]');
         if (groupsButtonTextSpan) {
@@ -1224,6 +1241,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         messageArea.textContent = `Raumplan und Sitzordnung von '${sourcePlan.planName}' übernommen.`;
         renderGridForActivePlan();
+        renderStudentList();
     });
 
 
@@ -1988,5 +2006,71 @@ window.addEventListener('DOMContentLoaded', () => {
             messageArea.textContent = `Schüler ${parsedStudent.originalName} konnte aufgrund von Nachbarschaftsregeln nicht platziert werden.`;
         }
     });
+
+    // --- Color Picker Modal Logic ---
+    function openColorModal(planId) {
+        activePlanIdForColorChange = planId;
+        const plan = plans.find(p => p.planId === planId);
+        currentlySelectedColor = plan.color || '#ffffff';
+
+        populateColorGrid();
+        updateSelectedColorPreview(currentlySelectedColor);
+        customColorInput.value = currentlySelectedColor;
+        colorModal.classList.remove('hidden');
+    }
+
+    function closeColorModal() {
+        colorModal.classList.add('hidden');
+        activePlanIdForColorChange = null;
+        currentlySelectedColor = null;
+    }
+
+    function populateColorGrid() {
+        colorGrid.innerHTML = '';
+        PREDEFINED_COLORS.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.classList.add('color-grid-swatch');
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
+            if (color.toLowerCase() === currentlySelectedColor.toLowerCase()) {
+                swatch.classList.add('selected');
+            }
+            swatch.addEventListener('click', () => {
+                currentlySelectedColor = color;
+                updateSelectedColorPreview(color);
+                const currentSelected = colorGrid.querySelector('.selected');
+                if (currentSelected) {
+                    currentSelected.classList.remove('selected');
+                }
+                swatch.classList.add('selected');
+            });
+            colorGrid.appendChild(swatch);
+        });
+    }
+
+    function updateSelectedColorPreview(color) {
+        selectedColorPreview.style.backgroundColor = color;
+    }
+
+    customColorInput.addEventListener('input', (e) => {
+        currentlySelectedColor = e.target.value;
+        updateSelectedColorPreview(currentlySelectedColor);
+        const currentSelected = colorGrid.querySelector('.selected');
+        if (currentSelected) {
+            currentSelected.classList.remove('selected');
+        }
+    });
+
+    confirmColorButton.addEventListener('click', () => {
+        const plan = plans.find(p => p.planId === activePlanIdForColorChange);
+        if (plan) {
+            plan.color = currentlySelectedColor;
+            renderTabs();
+        }
+        closeColorModal();
+    });
+
+    cancelColorButton.addEventListener('click', closeColorModal);
+
     addTab();
 });
