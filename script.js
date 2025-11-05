@@ -66,7 +66,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const roomEditorContainer = document.getElementById('roomEditorContainer');
     const roomEditorGridDiv = document.getElementById('roomEditorGrid');
     const applyLayoutButton = document.getElementById('applyLayoutButton');
-    const copyPlanButton = document.getElementById('copyPlanButton');
+    const copyPlanContainer = document.getElementById('copyPlanContainer');
+    const copyPlanSelect = document.getElementById('copyPlanSelect');
+    const copyPlanConfirmButton = document.getElementById('copyPlanConfirmButton');
     const groupEditorContainer = document.getElementById('groupEditorContainer');
     const groupEditorColorSwatchesDiv = document.getElementById('groupEditorColorSwatches');
     const closeGroupEditorButton = document.getElementById('closeGroupEditorButton');
@@ -247,12 +249,19 @@ window.addEventListener('DOMContentLoaded', () => {
             roomEditorContainer.classList.add('hidden');
             groupEditorContainer.classList.add('hidden');
 
-            if (plans.length > 1 && plans[0].planId !== activePlanId) {
-                copyPlanButton.classList.remove('hidden');
-                const sourcePlanName = plans[0].planName || "Plan 1";
-                copyPlanButton.querySelector('span[data-text-content]').textContent = `Raumplan '${sourcePlanName.substring(0,10)}...'`;
+            if (plans.length > 1) {
+                copyPlanContainer.classList.remove('hidden');
+                copyPlanSelect.innerHTML = '';
+                plans.forEach(plan => {
+                    if (plan.planId !== activePlanId) {
+                        const option = document.createElement('option');
+                        option.value = plan.planId;
+                        option.textContent = plan.planName;
+                        copyPlanSelect.appendChild(option);
+                    }
+                });
             } else {
-                copyPlanButton.classList.add('hidden');
+                copyPlanContainer.classList.add('hidden');
             }
 
 
@@ -260,6 +269,17 @@ window.addEventListener('DOMContentLoaded', () => {
             renderGridForActivePlan();
             renderStudentList();
         }
+    }
+
+    function isColorDark(hexColor) {
+        if (!hexColor) return false;
+        const color = hexColor.substring(1); // strip #
+        const rgb = parseInt(color, 16);
+        const r = (rgb >> 16) & 0xff;
+        const g = (rgb >> 8) & 0xff;
+        const b = (rgb >> 0) & 0xff;
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        return luma < 128;
     }
 
     function renderTabs() {
@@ -276,6 +296,9 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             if (plan.color) {
                 tabDiv.style.backgroundColor = plan.color;
+                if (isColorDark(plan.color)) {
+                    tabDiv.classList.add('dark-background');
+                }
             }
             tabDiv.dataset.planId = plan.planId;
 
@@ -1162,10 +1185,11 @@ window.addEventListener('DOMContentLoaded', () => {
         performFullSeatAssignment(activePlan);
     });
 
-    copyPlanButton.addEventListener('click', () => {
+    copyPlanConfirmButton.addEventListener('click', () => {
         const activePlan = plans.find(p => p.planId === activePlanId);
-        const sourcePlan = plans[0];
-        if (!activePlan || !sourcePlan || activePlan.planId === sourcePlan.planId) return;
+        const sourcePlanId = copyPlanSelect.value;
+        const sourcePlan = plans.find(p => p.planId === sourcePlanId);
+        if (!activePlan || !sourcePlan) return;
 
         activePlan.className = sourcePlan.className;
         activePlan.roomName = sourcePlan.roomName;
@@ -1174,6 +1198,7 @@ window.addEventListener('DOMContentLoaded', () => {
         activePlan.isCustomLayoutActive = sourcePlan.isCustomLayoutActive;
         activePlan.customLayoutSeatDefinitions = JSON.parse(JSON.stringify(sourcePlan.customLayoutSeatDefinitions));
         activePlan.NUM_SEATS_EFFECTIVE = sourcePlan.NUM_SEATS_EFFECTIVE;
+        activePlan.allParsedStudentsList = JSON.parse(JSON.stringify(sourcePlan.allParsedStudentsList));
 
         if (activePlan.isCustomLayoutActive) {
             calculateUsedBoundsForPlan(activePlan);
@@ -1185,41 +1210,21 @@ window.addEventListener('DOMContentLoaded', () => {
         initializeSeatDataForPlan(activePlan);
 
         sourcePlan.seatData.forEach((sourceSeat, sourceSeatIndex) => {
-            if (sourceSeat.student) {
-                const studentExistsInActivePlan = activePlan.allParsedStudentsList.find(s => s.originalName === sourceSeat.student);
-                if (studentExistsInActivePlan) {
-                    let targetSeatInActivePlan = null;
-                    if (activePlan.isCustomLayoutActive) {
-                        targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
-                    } else {
-                        if (sourceSeatIndex < activePlan.seatData.length) {
-                            targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
-                        }
-                    }
-
-                    if (targetSeatInActivePlan) {
-                        targetSeatInActivePlan.student = sourceSeat.student;
-                        targetSeatInActivePlan.colorState = sourceSeat.colorState;
-                        targetSeatInActivePlan.groupId = sourceSeat.groupId;
-                        targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
-                        targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
-                    }
-                }
+            let targetSeatInActivePlan = null;
+            if (activePlan.isCustomLayoutActive) {
+                targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
             } else {
-                let targetSeatInActivePlan = null;
-                if (activePlan.isCustomLayoutActive) {
-                    targetSeatInActivePlan = activePlan.seatData.find(s => s.originalGridIndex === sourceSeat.originalGridIndex);
-                } else {
-                    if (sourceSeatIndex < activePlan.seatData.length) {
-                        targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
-                    }
+                if (sourceSeatIndex < activePlan.seatData.length) {
+                    targetSeatInActivePlan = activePlan.seatData[sourceSeatIndex];
                 }
-                if (targetSeatInActivePlan) {
-                    targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
-                    targetSeatInActivePlan.colorState = sourceSeat.colorState;
-                    targetSeatInActivePlan.groupId = sourceSeat.groupId;
-                    targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
-                }
+            }
+
+            if (targetSeatInActivePlan) {
+                targetSeatInActivePlan.student = sourceSeat.student;
+                targetSeatInActivePlan.colorState = sourceSeat.colorState;
+                targetSeatInActivePlan.groupId = sourceSeat.groupId;
+                targetSeatInActivePlan.groupStyleType = sourceSeat.groupStyleType;
+                targetSeatInActivePlan.isMarkedToKeepEmpty = sourceSeat.isMarkedToKeepEmpty;
             }
         });
 
@@ -1227,6 +1232,7 @@ window.addEventListener('DOMContentLoaded', () => {
         roomNameInput.value = activePlan.roomName;
         commentInput.value = activePlan.comment;
         groupEditorInput.value = activePlan.groupSetting;
+        studentNamesTextarea.value = activePlan.allParsedStudentsList.map(s => s.originalName).join(',\n');
         activePlan.areGroupsActive = activePlan.seatData.some(s => s.groupId !== null);
         const groupsButtonTextSpan = generateGroupsButton.querySelector('span[data-text-content]');
         if (groupsButtonTextSpan) {
@@ -1235,6 +1241,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         messageArea.textContent = `Raumplan und Sitzordnung von '${sourcePlan.planName}' übernommen.`;
         renderGridForActivePlan();
+        renderStudentList();
     });
 
 

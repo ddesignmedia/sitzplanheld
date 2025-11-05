@@ -195,6 +195,16 @@ body.dark-mode .tab-action-icon:hover {
     color: var(--color-gray-600);
 }
 
+.tab.dark-background,
+.tab.dark-background .tab-name-display,
+.tab.dark-background .tab-action-icon {
+    color: #ffffff;
+}
+
+body.dark-mode .tab.dark-background .tab-action-icon {
+    color: #ffffff;
+}
+
 .tab.dragging-tab {
     opacity: 0.5;
     cursor: grabbing;
@@ -740,4 +750,25 @@ body.dark-mode .modal-title {
 
 .modal-button.primary:hover {
     background-color: var(--color-blue-800);
+}
+
+#copyPlanContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#copyPlanContainer.hidden {
+    display: none;
+}
+
+#copyPlanSelect {
+    flex-grow: 1;
+    min-width: 150px;
+}
+
+@media (min-width: 768px) {
+  .color-grid {
+    display: grid !important;
+  }
 }
