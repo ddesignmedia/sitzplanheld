@@ -97,6 +97,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const newPlan = {
             planId: planId,
             planName: name,
+            color: copyFromPlan ? copyFromPlan.color : null,
             seatData: [],
             allParsedStudentsList: copyFromPlan ? JSON.parse(JSON.stringify(copyFromPlan.allParsedStudentsList)) : [],
             className: copyFromPlan ? copyFromPlan.className : "",
@@ -262,6 +263,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if (plan.planId === activePlanId) {
                 tabDiv.classList.add('active');
             }
+            if (plan.color) {
+                tabDiv.style.backgroundColor = plan.color;
+            }
             tabDiv.dataset.planId = plan.planId;
 
             const nameSpan = document.createElement('span');
@@ -280,6 +284,26 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             tabDiv.appendChild(editIcon);
 
+            const colorInput = document.createElement('input');
+            colorInput.type = 'color';
+            colorInput.classList.add('tab-color-input');
+            colorInput.style.display = 'none';
+            colorInput.addEventListener('input', (e) => {
+                plan.color = e.target.value;
+                tabDiv.style.backgroundColor = e.target.value;
+            });
+            tabDiv.appendChild(colorInput);
+
+            const colorIcon = document.createElement('span');
+            colorIcon.classList.add('tab-action-icon');
+            colorIcon.innerHTML = '🎨';
+            colorIcon.title = "Farbe ändern";
+            colorIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                colorInput.click();
+            });
+            tabDiv.appendChild(colorIcon);
+
 
             const closeButton = document.createElement('span');
             closeButton.classList.add('tab-action-icon');
@@ -291,9 +315,83 @@ window.addEventListener('DOMContentLoaded', () => {
             });
             tabDiv.appendChild(closeButton);
 
+            tabDiv.draggable = true;
             tabDiv.addEventListener('click', () => setActivePlan(plan.planId));
+            tabDiv.addEventListener('dragstart', handleTabDragStart);
+            tabDiv.addEventListener('dragover', handleTabDragOver);
+            tabDiv.addEventListener('dragleave', handleTabDragLeave);
+            tabDiv.addEventListener('drop', handleTabDrop);
+            tabDiv.addEventListener('dragend', handleTabDragEnd);
             tabBar.insertBefore(tabDiv, addTabButton);
         });
+    }
+
+    let draggedTabId = null;
+
+    function handleTabDragStart(e) {
+        draggedTabId = e.currentTarget.dataset.planId;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedTabId);
+        setTimeout(() => {
+            e.currentTarget.classList.add('dragging-tab');
+        }, 0);
+    }
+
+    function handleTabDragOver(e) {
+        e.preventDefault();
+        const draggingTab = document.querySelector('.dragging-tab');
+        if (!draggingTab || draggingTab === e.currentTarget) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const isAfter = e.clientX > rect.left + rect.width / 2;
+
+        if (isAfter) {
+            e.currentTarget.classList.add('drag-over-after');
+            e.currentTarget.classList.remove('drag-over-before');
+        } else {
+            e.currentTarget.classList.add('drag-over-before');
+            e.currentTarget.classList.remove('drag-over-after');
+        }
+    }
+
+    function handleTabDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over-before', 'drag-over-after');
+    }
+
+    function handleTabDrop(e) {
+        e.preventDefault();
+        const targetTab = e.currentTarget;
+        const targetId = targetTab.dataset.planId;
+
+        targetTab.classList.remove('drag-over-before', 'drag-over-after');
+
+        if (draggedTabId === targetId) return;
+
+        const draggedIndex = plans.findIndex(p => p.planId === draggedTabId);
+
+        const [draggedPlan] = plans.splice(draggedIndex, 1);
+
+        const newTargetIndex = plans.findIndex(p => p.planId === targetId);
+
+        const rect = targetTab.getBoundingClientRect();
+        const isAfter = e.clientX > rect.left + rect.width / 2;
+
+        if (isAfter) {
+            plans.splice(newTargetIndex + 1, 0, draggedPlan);
+        } else {
+            plans.splice(newTargetIndex, 0, draggedPlan);
+        }
+
+        renderTabs();
+    }
+
+    function handleTabDragEnd(e) {
+        draggedTabId = null;
+        const draggingElem = document.querySelector('.dragging-tab');
+        if (draggingElem) {
+            draggingElem.classList.remove('dragging-tab');
+        }
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('drag-over-before', 'drag-over-after'));
     }
 
     function makeTabNameEditable(spanElement, planId) {
@@ -1268,6 +1366,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     plans.forEach(plan => {
                         plan.comment = plan.comment || "";
                         plan.groupSetting = plan.groupSetting || "";
+                        plan.color = plan.color || null;
                         plan.isCustomLayoutActive = plan.isCustomLayoutActive || false;
                         plan.customLayoutSeatDefinitions = plan.customLayoutSeatDefinitions || [];
                         plan.NUM_SEATS_EFFECTIVE = plan.NUM_SEATS_EFFECTIVE || (plan.isCustomLayoutActive ? plan.customLayoutSeatDefinitions.length : DEFAULT_NUM_SEATS);
