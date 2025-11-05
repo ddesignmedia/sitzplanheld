@@ -79,6 +79,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const addStudentNameInput = document.getElementById('addStudentNameInput');
     const addStudentButton = document.getElementById('addStudentButton');
     const studentListContainer = document.getElementById('studentListContainer');
+    const colorModal = document.getElementById('colorModal');
+    const colorGrid = document.getElementById('colorGrid');
+    const customColorInput = document.getElementById('customColorInput');
+    const selectedColorPreview = document.getElementById('selectedColorPreview');
+    const cancelColorButton = document.getElementById('cancelColor');
+    const confirmColorButton = document.getElementById('confirmColor');
+
+    let activePlanIdForColorChange = null;
+    let currentlySelectedColor = null;
+
+    const PREDEFINED_COLORS = ['#ff0000', '#2a1aff', '#faff00', '#00ff0a', '#ff0099', '#8d1aff', '#00ffe0', '#c97700', '#006d17', '#8d8d8d', '#000000', '#ffffff'];
 
     const PREDEFINED_DEFAULT_LAYOUT_SEAT_DEFINITIONS = [];
     for (let r = 0; r < 4; r++) { // 4 rows
@@ -300,7 +311,7 @@ window.addEventListener('DOMContentLoaded', () => {
             colorIcon.title = "Farbe ändern";
             colorIcon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                colorInput.click();
+                openColorModal(plan.planId);
             });
             tabDiv.appendChild(colorIcon);
 
@@ -1988,5 +1999,71 @@ window.addEventListener('DOMContentLoaded', () => {
             messageArea.textContent = `Schüler ${parsedStudent.originalName} konnte aufgrund von Nachbarschaftsregeln nicht platziert werden.`;
         }
     });
+
+    // --- Color Picker Modal Logic ---
+    function openColorModal(planId) {
+        activePlanIdForColorChange = planId;
+        const plan = plans.find(p => p.planId === planId);
+        currentlySelectedColor = plan.color || '#ffffff';
+
+        populateColorGrid();
+        updateSelectedColorPreview(currentlySelectedColor);
+        customColorInput.value = currentlySelectedColor;
+        colorModal.classList.remove('hidden');
+    }
+
+    function closeColorModal() {
+        colorModal.classList.add('hidden');
+        activePlanIdForColorChange = null;
+        currentlySelectedColor = null;
+    }
+
+    function populateColorGrid() {
+        colorGrid.innerHTML = '';
+        PREDEFINED_COLORS.forEach(color => {
+            const swatch = document.createElement('div');
+            swatch.classList.add('color-grid-swatch');
+            swatch.style.backgroundColor = color;
+            swatch.dataset.color = color;
+            if (color.toLowerCase() === currentlySelectedColor.toLowerCase()) {
+                swatch.classList.add('selected');
+            }
+            swatch.addEventListener('click', () => {
+                currentlySelectedColor = color;
+                updateSelectedColorPreview(color);
+                const currentSelected = colorGrid.querySelector('.selected');
+                if (currentSelected) {
+                    currentSelected.classList.remove('selected');
+                }
+                swatch.classList.add('selected');
+            });
+            colorGrid.appendChild(swatch);
+        });
+    }
+
+    function updateSelectedColorPreview(color) {
+        selectedColorPreview.style.backgroundColor = color;
+    }
+
+    customColorInput.addEventListener('input', (e) => {
+        currentlySelectedColor = e.target.value;
+        updateSelectedColorPreview(currentlySelectedColor);
+        const currentSelected = colorGrid.querySelector('.selected');
+        if (currentSelected) {
+            currentSelected.classList.remove('selected');
+        }
+    });
+
+    confirmColorButton.addEventListener('click', () => {
+        const plan = plans.find(p => p.planId === activePlanIdForColorChange);
+        if (plan) {
+            plan.color = currentlySelectedColor;
+            renderTabs();
+        }
+        closeColorModal();
+    });
+
+    cancelColorButton.addEventListener('click', closeColorModal);
+
     addTab();
 });
