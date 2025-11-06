@@ -1694,7 +1694,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (currentPlan.className) {
                 doc.setFontSize(classFontSize * pdfScaleFactor);
-                doc.text(`Klasse: ${currentPlan.className}`, 14, yOffsetForDetails);
+                doc.text(`Verwendungszweck: ${currentPlan.className}`, 14, yOffsetForDetails);
                 yOffsetForDetails += (classFontSize * pdfScaleFactor * 0.352778 / 2) + 3;
             }
             if (currentPlan.roomName) {
@@ -1958,6 +1958,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Initialisierung beim Laden der Seite
     addTabButton.addEventListener('click', addTab);
+
+    // KORREKTUR: Die addTab-Funktion wird nicht mehr am Ende aufgerufen, um Race-Conditions zu vermeiden.
+    // Stattdessen wird beim Laden geprüft, ob Pläne vorhanden sind. Wenn nicht, wird ein initialer leerer Plan erstellt.
+    if (plans.length === 0) {
+        const initialPlan = createNewPlan();
+        plans.push(initialPlan);
+        setActivePlan(initialPlan.planId);
+    }
+
     addStudentButton.addEventListener('click', () => {
         const activePlan = plans.find(p => p.planId === activePlanId);
         if (!activePlan) return;
