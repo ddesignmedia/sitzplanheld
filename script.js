@@ -1,4 +1,16 @@
 window.addEventListener('DOMContentLoaded', () => {
+    // --- Schülerverwaltung ein-/ausblenden ---
+    const toggleStudentManagementButton = document.getElementById('toggleStudentManagement');
+    const studentManagementContent = document.getElementById('studentManagementContent');
+
+    if (toggleStudentManagementButton && studentManagementContent) {
+        // Initialer Zustand: ausgeblendet
+        studentManagementContent.classList.add('hidden');
+
+        toggleStudentManagementButton.addEventListener('click', () => {
+            studentManagementContent.classList.toggle('hidden');
+        });
+    }
 
     // --- Dark Mode ---
     const darkModeToggle = document.getElementById('darkModeToggle');
